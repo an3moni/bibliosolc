@@ -1,0 +1,172 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Administració - Biblioteques Escola Solc</title>
+    </head>
+    <body>
+        <div
+            style="
+                position: absolute;
+                left: 5px;
+                top: 5px;
+                text-decoration: none;
+            "
+        >
+            <a style="text-decoration: none; color: royalblue" href="/"
+                >← Tornar enrere</a
+            >
+            |
+            <a
+                style="text-decoration: none; color: royalblue"
+                href="javascript:sessionStorage.clear();window.location.reload()"
+                >Tancar sessió</a
+            >
+        </div>
+
+        <h2 id="ctx">Biblioteques Escola Solc</h2>
+
+        <div class="panel" id="login_panel">
+            <h1>Panell d'administració</h1>
+
+            <div id="input">
+                <input
+                    type="password"
+                    id="password"
+                    placeholder="Contrasenya"
+                />
+                <button id="login">Entra</button>
+            </div>
+        </div>
+
+        <div class="panel" id="actions_panel">
+            <h1>Panell d'administració</h1>
+            <a class="button" href="/admin/create.html">Afegir llibres</a>
+            <br />
+            <a class="button" href="/admin/delete.html">Treure llibres</a>
+            <br />
+            <a class="button" href="/api/listbooks">Baixar dades</a>
+        </div>
+
+        <style>
+            #ctx {
+                position: absolute;
+                left: 50%;
+                translate: -50%;
+            }
+
+            .panel {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                translate: -50% -50%;
+                border: 1px solid lightgray;
+                padding: 2rem;
+                border-radius: 0.3rem;
+                transition: border-color 0.2s;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .panel:hover,
+            .panel:has(input:focus) {
+                border-color: black;
+            }
+
+            #back {
+                position: absolute;
+                top: 5px;
+                left: 5px;
+                text-decoration: none;
+                color: royalblue;
+            }
+
+            #password {
+                all: unset;
+                border: 1px solid lightgray;
+                transition: border-color 0.2s;
+                border-radius: 0.2rem;
+                padding: 5px;
+            }
+
+            #password:hover,
+            #passwor:focus {
+                border-color: black;
+            }
+
+            button,
+            a.button {
+                all: unset;
+                border: 1px solid lightgray;
+                border-radius: 0.2rem;
+                padding: 5px;
+                transition: border-color 0.2s;
+                cursor: pointer;
+                text-align: center;
+                box-shadow: 10px 0 gray;
+            }
+
+            *:hover > button,
+            *:hover > a.button {
+                border-color: black;
+            }
+            button:hover,
+            a.button:hover {
+                box-shadow: 5px 0 gray;
+                translate: 5px 0;
+            }
+            button:active,
+            a.button:active {
+                box-shadow: 0 0 gray;
+                translate: 10px 0;
+            }
+
+            #actions_panel {
+                display: none;
+            }
+        </style>
+
+        <script>
+            if (sessionStorage.adminPassword != undefined) {
+                document.getElementById("login_panel").style.display = "none";
+                document.getElementById("actions_panel").style.display = "flex";
+            }
+
+            document
+                .getElementById("login")
+                .addEventListener("click", async () => {
+                    const password = document.getElementById("password").value;
+
+                    const response = await fetch("/login", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            password,
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        document.getElementById(
+                            "password",
+                        ).style.backgroundColor = "red";
+
+                        setTimeout(function () {
+                            document.getElementById(
+                                "password",
+                            ).style.backgroundColor = "";
+                        }, 2000);
+
+                        return;
+                    }
+
+                    sessionStorage.setItem("adminPassword", password);
+
+                    window.location.reload();
+                });
+        </script>
+    </body>
+</html>

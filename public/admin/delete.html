@@ -1,0 +1,195 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Treure llibres - Biblioteques Escola Solc</title>
+    </head>
+    <body>
+        <div
+            style="
+                position: absolute;
+                left: 5px;
+                top: 5px;
+                text-decoration: none;
+            "
+        >
+            <a style="text-decoration: none; color: royalblue" href="/admin"
+                >← Tornar endarrere</a
+            >
+        </div>
+        <div id="panel">
+            <h1>Treure llibres</h1>
+
+            <hr />
+
+            <input id="query" placeholder="Busca el llibre" />
+            <div id="results" style="height: 75%; overflow-y: auto"></div>
+        </div>
+
+        <style>
+            #panel {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                translate: -50% -50%;
+                padding: 2rem;
+                border: 1px solid lightgray;
+                border-radius: 0.2rem;
+                transition: border-color 0.2s;
+                height: 50%;
+                width: 50%;
+            }
+
+            input,
+            select {
+                all: unset;
+                border: 1px solid lightgray;
+                transition: border-color 0.2s;
+                border-radius: 0.2rem;
+                padding: 5px;
+                width: calc(100% - 1rem);
+            }
+
+            input:hover,
+            input:focus,
+            select:hover,
+            select:focus {
+                border-color: black;
+            }
+
+            #panel:hover,
+            #panel:has(*:hover) {
+                border-color: black;
+            }
+
+            button {
+                all: unset;
+                border: 1px solid lightgray;
+                border-radius: 0.2rem;
+                padding: 5px;
+                transition: border-color 0.2s;
+                cursor: pointer;
+                width: calc(100% - 1rem);
+                text-align: center;
+                box-shadow: 0 10px gray;
+            }
+
+            *:hover > button {
+                border-color: black;
+            }
+            button:hover {
+                box-shadow: 0 5px gray;
+                translate: 0px 5px;
+            }
+            button:active {
+                box-shadow: 0 0 gray;
+                translate: 0 10px;
+            }
+
+            .book {
+                border: 1px solid lightgray;
+                cursor: pointer;
+                transition: border-color 0.2s;
+                border-radius: 0.2rem;
+                margin-top: 1rem;
+                padding-left: 1rem;
+            }
+            .book:hover {
+                border-color: black;
+            }
+        </style>
+
+        <script src="/admin/admin.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+
+        <script>
+            requireLogin();
+
+            let books = [];
+            let fuse = null;
+
+            async function loadBooks() {
+                const res = await fetch("/api/listbooks");
+                books = await res.json();
+
+                fuse = new Fuse(books, {
+                    keys: ["title", "author", "libraryId"],
+                    //ignoreLocation: true,
+                });
+            }
+
+            function renderResults(results) {
+                const container = document.getElementById("results");
+                container.innerHTML = "";
+
+                for (const book of results) {
+                    const div = document.createElement("div");
+                    div.className = "book";
+
+                    div.innerHTML = `
+                <h3>${book.title}</h3>
+                <p>${book.author}</p>
+                <p>#${book.libraryId}</p>
+            `;
+
+                    div.onclick = () => {
+                        deleteBook(book.title, book.id);
+                    };
+
+                    container.appendChild(div);
+                }
+            }
+
+            function search(query) {
+                if (!fuse || !query) {
+                    renderResults(books.slice(0, 50)); // fallback
+                    return;
+                }
+
+                const results = fuse
+                    .search(query)
+                    .slice(0, 50)
+                    .map((r) => r.item);
+
+                renderResults(results);
+            }
+
+            document.getElementById("query").addEventListener("input", (e) => {
+                search(e.target.value);
+            });
+
+            loadBooks().then(() => {
+                search(""); // show initial results
+            });
+
+            async function deleteBook(title, internal_id) {
+                const confirmed = confirm(`Vols treure el llibre "${title}"?`);
+
+                if (!confirmed) {
+                    return;
+                }
+
+                const response = await fetch(`/api/books/${internal_id}`, {
+                    method: "DELETE",
+
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+
+                    body: JSON.stringify({
+                        password: getPassword(),
+                    }),
+                });
+
+                if (response.ok) {
+                    alert("El llibre s'ha tret");
+                    loadBooks().then(() => {
+                        search(document.getElementById("query").value); // show initial results
+                    });
+                } else {
+                    alert("Error, l'operació no s'ha completat");
+                }
+            }
+        </script>
+    </body>
+</html>

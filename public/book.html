@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>...carregant llibre</title>
+
+        <style>
+            body {
+                font-family: sans-serif;
+                max-width: 800px;
+                margin: auto;
+                padding: 1rem;
+            }
+
+            #back {
+                position: absolute;
+                top: 5px;
+                left: 5px;
+                text-decoration: none;
+                color: royalblue;
+            }
+        </style>
+    </head>
+
+    <body>
+        <a id="back" href="/"> ← Tornar enrere </a>
+
+        <h1 id="title">Loading...</h1>
+
+        <p><strong>Autor:</strong> <span id="author"></span></p>
+        <p><strong>ID: </strong>#<span id="libraryId"></span></p>
+        <p><strong>Building level:</strong> <span id="level"></span></p>
+        <p><strong>Armari:</strong> <span id="shelfX"></span></p>
+        <p>
+            <strong>Prestatgeria (de baix a dalt):</strong>
+            <span id="shelfY"></span>
+        </p>
+
+        <div
+            style="
+                position: absolute;
+                width: 400px;
+                aspect-ratio: 1;
+                border: 1px solid lightgray;
+                border-radius: 0.2rem;
+                text-align: center;
+                vertical-align: middle;
+            "
+        >
+            Aqui va un mapa de la biblioteca amb els armaris numerats
+        </div>
+
+        <script src="building.js"></script>
+        <script>
+            function getBookId() {
+                const params = new URLSearchParams(window.location.search);
+                return params.get("id");
+            }
+
+            async function loadBook() {
+                const id = getBookId();
+
+                if (!id) {
+                    document.body.innerHTML = "<h1>Missing book id</h1>";
+                    return;
+                }
+
+                const response = await fetch(`/api/books/${id}`);
+
+                if (!response.ok) {
+                    document.body.innerHTML = `
+            <h1>Book not found</h1>
+            <a href="/">Back</a>
+        `;
+                    return;
+                }
+
+                const book = await response.json();
+
+                document.getElementById("title").textContent = book.title;
+                document.getElementById("author").textContent = book.author;
+                document.getElementById("libraryId").textContent =
+                    book.libraryId;
+                document.getElementById("level").textContent =
+                    building[book.level].name;
+                document.getElementById("shelfX").textContent = book.shelfX;
+                document.getElementById("shelfY").textContent = book.shelfY;
+                document.title = book.title + " - BiblioSolc";
+            }
+
+            loadBook();
+        </script>
+    </body>
+</html>

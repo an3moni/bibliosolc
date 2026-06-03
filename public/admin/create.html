@@ -1,0 +1,201 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Afegir llibre - Biblioteques Escola Solc</title>
+    </head>
+    <body>
+        <div
+            style="
+                position: absolute;
+                left: 5px;
+                top: 5px;
+                text-decoration: none;
+            "
+        >
+            <a style="text-decoration: none; color: royalblue" href="/admin"
+                >← Tornar endarrere</a
+            >
+        </div>
+
+        <div id="panel">
+            <h1>Afegir llibre</h1>
+            <hr />
+
+            <input id="libraryId" placeholder="Número d'identificació" />
+
+            <br /><br />
+
+            <input id="title" placeholder="Títol" />
+
+            <br /><br />
+
+            <input id="author" placeholder="Autor" />
+
+            <br /><br />
+
+            <select id="level"></select>
+
+            <br /><br />
+
+            <input id="shelfX" type="number" placeholder="Número d'armari" />
+
+            <br /><br />
+
+            <input
+                id="shelfY"
+                type="number"
+                placeholder="Prestatgeria (de baix a dalt)"
+            />
+
+            <br /><br />
+
+            <button id="create">Afegir llibre</button>
+
+            <p id="result"></p>
+        </div>
+
+        <div
+            style="
+                position: absolute;
+                width: 400px;
+                aspect-ratio: 1;
+                border: 1px solid lightgray;
+                border-radius: 0.2rem;
+                text-align: center;
+                vertical-align: middle;
+                left: 62%;
+                top: 50%;
+                translate: 0px -50%;
+            "
+        >
+            Aqui va un mapa de la biblioteca amb els armaris numerats
+        </div>
+
+        <style>
+            #panel {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                translate: -50% -50%;
+                padding: 2rem;
+                border: 1px solid lightgray;
+                border-radius: 0.2rem;
+                transition: border-color 0.2s;
+            }
+
+            input,
+            select {
+                all: unset;
+                border: 1px solid lightgray;
+                transition: border-color 0.2s;
+                border-radius: 0.2rem;
+                padding: 5px;
+                width: calc(100% - 1rem);
+            }
+
+            input:hover,
+            input:focus,
+            select:hover,
+            select:focus {
+                border-color: black;
+            }
+
+            #panel:hover,
+            #panel:has(*:hover) {
+                border-color: black;
+            }
+
+            button {
+                all: unset;
+                border: 1px solid lightgray;
+                border-radius: 0.2rem;
+                padding: 5px;
+                transition: border-color 0.2s;
+                cursor: pointer;
+                width: calc(100% - 1rem);
+                text-align: center;
+                box-shadow: 0 10px gray;
+            }
+
+            *:hover > button {
+                border-color: black;
+            }
+            button:hover {
+                box-shadow: 0 5px gray;
+                translate: 0px 5px;
+            }
+            button:active {
+                box-shadow: 0 0 gray;
+                translate: 0 10px;
+            }
+        </style>
+
+        <script src="../building.js"></script>
+        <script src="/admin/admin.js"></script>
+
+        <script>
+            for (let l in building) {
+                document.getElementById("level").innerHTML +=
+                    "<option value='" +
+                    l +
+                    "'>" +
+                    building[l].name +
+                    "</option>";
+            }
+
+            requireLogin();
+
+            document
+                .getElementById("create")
+                .addEventListener("click", async () => {
+                    const confirmed = confirm("Create this book?");
+
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    const response = await fetch("/api/books", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            password: getPassword(),
+
+                            libraryId:
+                                document.getElementById("libraryId").value,
+
+                            title: document.getElementById("title").value,
+
+                            author: document.getElementById("author").value,
+
+                            level: Number(
+                                document.getElementById("level").value,
+                            ),
+
+                            shelfX: Number(
+                                document.getElementById("shelfX").value,
+                            ),
+
+                            shelfY: Number(
+                                document.getElementById("shelfY").value,
+                            ),
+                        }),
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        document.getElementById("result").textContent =
+                            data.error ?? "Error";
+
+                        return;
+                    }
+
+                    alert("Llibre afegit!");
+                    window.location.reload();
+                });
+        </script>
+    </body>
+</html>

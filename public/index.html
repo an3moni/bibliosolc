@@ -1,23 +1,158 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <title>My Oak App</title>
-    <link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-    <h1>Hello Deno Deploy</h1>
+    <head>
+        <meta charset="utf-8" />
+        <title>Biblioteques Escola Solc</title>
 
-    <button id="btn">Get time</button>
-    <p id="result"></p>
+        <style>
+            body,
+            html {
+                height: 100%;
+                width: 100%;
+                margin: 0px;
+                padding: 0px;
+                overflow: hidden;
+            }
 
-    <script>
-        document.getElementById("btn").onclick = async () => {
-            const response = await fetch("/api/time");
-            const data = await response.json();
+            #admin {
+                position: absolute;
+                left: 5px;
+                top: 5px;
+                text-decoration: none;
+                color: royalblue;
+            }
 
-            document.getElementById("result").textContent =
-                data.time;
-        };
-    </script>
-</body>
+            #query {
+                all: unset;
+                border: 1px solid lightgray;
+                padding: 5px;
+                padding-left: 1rem;
+                border-radius: 0.2rem;
+                transition: border-color 0.2s;
+            }
+
+            #query:hover {
+                border-color: black;
+            }
+
+            body {
+                font-family: sans-serif;
+                max-width: 1000px;
+                margin: auto;
+            }
+
+            #results {
+                margin-top: 1rem;
+                height: 80%;
+                overflow-y: auto;
+            }
+
+            .book {
+                border: 1px solid lightgray;
+                padding: 1rem;
+                margin-bottom: 1rem;
+                cursor: pointer;
+                transition: border-color 0.2s;
+                border-radius: 0.2rem;
+            }
+
+            .book:hover {
+                border-color: black;
+            }
+
+            #patr {
+                display: flex;
+                flex-direction: row;
+                width: 100%;
+                align-items: center;
+                justify-content: space-around;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Biblioteques Escola Solc</h1>
+
+        <a id="admin" href="/admin">Panell d'administració</a>
+
+        <input
+            id="query"
+            placeholder="Titol, autor, o codi"
+            style="width: 80%"
+        />
+        <div id="results"></div>
+
+        <div id="patr">
+            <p>Fet per: Roger Padrell</p>
+            <a href="https://www.escolasolc.com/">
+                <img
+                    height="60px"
+                    src="https://escolescooperatives.cat/wp-content/uploads/2017/11/02.-Logo-general_positiu-300x94.jpg"
+                />
+            </a>
+            <a href="https://tejerutas.com/">
+                <img height="70px" src="cristiano_ronaldo.png" />
+            </a>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+        <script>
+            let books = [];
+            let fuse = null;
+
+            async function loadBooks() {
+                const res = await fetch("/api/listbooks");
+                books = await res.json();
+
+                fuse = new Fuse(books, {
+                    keys: ["title", "author", "libraryId"],
+                    ignoreLocation: true,
+                });
+            }
+
+            function renderResults(results) {
+                const container = document.getElementById("results");
+                container.innerHTML = "";
+
+                for (const book of results) {
+                    const div = document.createElement("div");
+                    div.className = "book";
+
+                    div.innerHTML = `
+            <h3>${book.title}</h3>
+            <p>${book.author}</p>
+            <p>#${book.libraryId}</p>
+        `;
+
+                    div.onclick = () => {
+                        window.location.href = `/book.html?id=${book.id}`;
+                    };
+
+                    container.appendChild(div);
+                }
+            }
+
+            function search(query) {
+                if (!fuse || !query) {
+                    renderResults(books.slice(0, 50)); // fallback
+                    return;
+                }
+
+                const results = fuse
+                    .search(query)
+                    .slice(0, 50)
+                    .map((r) => r.item);
+
+                renderResults(results);
+            }
+
+            document.getElementById("query").addEventListener("input", (e) => {
+                search(e.target.value);
+            });
+
+            loadBooks().then(() => {
+                search(""); // show initial results
+            });
+        </script>
+    </body>
 </html>
