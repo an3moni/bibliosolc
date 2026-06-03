@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Oak App</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <h1>Hello Deno Deploy</h1>
+
+    <button id="btn">Get time</button>
+    <p id="result"></p>
+
+    <script>
+        document.getElementById("btn").onclick = async () => {
+            const response = await fetch("/api/time");
+            const data = await response.json();
+
+            document.getElementById("result").textContent =
+                data.time;
+        };
+    </script>
+</body>
+</html>
