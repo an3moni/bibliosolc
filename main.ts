@@ -3,20 +3,16 @@ const kv = await Deno.openKv();
 import * as argon2 from "jsr:@felix/argon2";
 import Fuse from "npm:fuse.js";
 
-const ADMIN_PASSWORD_HASH = "$argon2id$v=19$m=4096,t=3,p=1$v2GLiiGP8HYi4sfRpQgchXKH03EShg$tKXOeQTZAgEZHzTgL9AmKIlDNphlSrjZzvd8GHRDNFg"
+const ADMIN_PASSWORD_HASH =
+  "$argon2id$v=19$m=4096,t=3,p=1$v2GLiiGP8HYi4sfRpQgchXKH03EShg$tKXOeQTZAgEZHzTgL9AmKIlDNphlSrjZzvd8GHRDNFg";
 
-async function authenticate(
-  password: string,
-): Promise<boolean> {
-  return await argon2.verify(
-    ADMIN_PASSWORD_HASH,
-    password,
-  );
+async function authenticate(password: string): Promise<boolean> {
+  return await argon2.verify(ADMIN_PASSWORD_HASH, password);
 }
 
 interface Book {
-  id: string;          // internal UUID
-  libraryId: string;   // visible tag
+  id: string; // internal UUID
+  libraryId: string; // visible tag
   title: string;
   author: string;
   level: number;
@@ -32,29 +28,27 @@ const router = new Router();
  */
 
 router.get("/api/listbooks", async (ctx) => {
-    const books = [];
+  const books = [];
 
-    for await (const entry of kv.list<Book>({
-        prefix: ["books"],
-    })) {
-        books.push(entry.value);
-    }
+  for await (const entry of kv.list<Book>({
+    prefix: ["books"],
+  })) {
+    books.push(entry.value);
+  }
 
-    ctx.response.body = books;
+  ctx.response.body = books;
 });
 
 router.get("/api/hello", (ctx) => {
   ctx.response.body = {
-    message: "Hello from Deno!"
+    message: "Hello from Deno!",
   };
 });
 
 router.post("/login", async (ctx) => {
   const body = await ctx.request.body.json();
 
-  const ok = await authenticate(
-    body.password,
-  );
+  const ok = await authenticate(body.password);
 
   if (!ok) {
     ctx.response.status = 401;
@@ -72,15 +66,7 @@ router.post("/login", async (ctx) => {
 router.post("/api/books", async (ctx) => {
   const body = await ctx.request.body.json();
 
-  const {
-    password,
-    libraryId,
-    title,
-    author,
-    level,
-    shelfX,
-    shelfY,
-  } = body;
+  const { password, libraryId, title, author, level, shelfX, shelfY } = body;
 
   if (
     !password ||
@@ -126,6 +112,63 @@ router.post("/api/books", async (ctx) => {
   };
 });
 
+router.post("/api/editbooks", async (ctx) => {
+  const body = await ctx.request.body.json();
+
+  const {
+    password,
+    libraryId,
+    title,
+    author,
+    level,
+    shelfX,
+    shelfY,
+    internalId,
+  } = body;
+
+  if (
+    !password ||
+    !libraryId ||
+    !title ||
+    !author ||
+    !internalId ||
+    level === undefined ||
+    shelfX === undefined ||
+    shelfY === undefined
+  ) {
+    ctx.response.status = 400;
+    ctx.response.body = {
+      error: "Missing required fields",
+    };
+    return;
+  }
+
+  if (!(await authenticate(password))) {
+    ctx.response.status = 401;
+    ctx.response.body = {
+      error: "Authentication failed",
+    };
+    return;
+  }
+
+  const book = {
+    internalId,
+    libraryId,
+    title,
+    author,
+    level,
+    shelfX,
+    shelfY,
+  };
+
+  await kv.set(["books", internalId], book);
+
+  ctx.response.body = {
+    success: true,
+    internalId,
+  };
+});
+
 router.delete("/api/books/:id", async (ctx) => {
   const id = ctx.params.id;
 
@@ -149,8 +192,7 @@ router.delete("/api/books/:id", async (ctx) => {
 });
 
 router.get("/api/search", async (ctx) => {
-  const query =
-    ctx.request.url.searchParams.get("q");
+  const query = ctx.request.url.searchParams.get("q");
 
   if (!query) {
     ctx.response.status = 400;
@@ -159,20 +201,14 @@ router.get("/api/search", async (ctx) => {
 
   const books: Book[] = [];
 
-  for await (
-    const entry of kv.list<Book>({
-      prefix: ["books"],
-    })
-  ) {
+  for await (const entry of kv.list<Book>({
+    prefix: ["books"],
+  })) {
     books.push(entry.value);
   }
 
   const fuse = new Fuse(books, {
-    keys: [
-      "title",
-      "author",
-      "libraryId",
-    ],
+    keys: ["title", "author", "libraryId"],
     threshold: 0.4,
     includeScore: true,
   });

@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8" />
-        <title>Afegir llibre - Biblioteques Escola Solc</title>
+        <title>Editar llibre - Biblioteques Escola Solc</title>
     </head>
     <body>
         <div
@@ -18,8 +18,8 @@
             >
         </div>
 
-        <div id="panel">
-            <h1>Afegir llibre</h1>
+        <div class="panel" id="edit_panel">
+            <h1>Editar llibre</h1>
             <hr />
 
             <input id="libraryId" placeholder="Número d'identificació" />
@@ -50,12 +50,22 @@
 
             <br /><br />
 
-            <button id="create">Afegir llibre</button>
+            <button id="create">Guardar canvis</button>
 
             <p id="result"></p>
         </div>
 
+        <div class="panel" id="search_panel">
+            <h1>Editar llibre</h1>
+
+            <hr />
+
+            <input id="query" placeholder="Busca el llibre" />
+            <div id="results" style="height: 75%; overflow-y: auto"></div>
+        </div>
+
         <div
+            id="map"
             style="
                 position: absolute;
                 width: 400px;
@@ -73,7 +83,13 @@
         </div>
 
         <style>
-            #panel {
+            #map {
+                display: none;
+            }
+            #edit_panel {
+                display: none;
+            }
+            .panel {
                 position: absolute;
                 left: 50%;
                 top: 50%;
@@ -101,8 +117,8 @@
                 border-color: black;
             }
 
-            #panel:hover,
-            #panel:has(*:hover) {
+            .panel:hover,
+            .panel:has(*:hover) {
                 border-color: black;
             }
 
@@ -129,10 +145,23 @@
                 box-shadow: 0 0 gray;
                 translate: 0 10px;
             }
+
+            .book {
+                border: 1px solid lightgray;
+                cursor: pointer;
+                transition: border-color 0.2s;
+                border-radius: 0.2rem;
+                margin-top: 1rem;
+                padding-left: 1rem;
+            }
+            .book:hover {
+                border-color: black;
+            }
         </style>
 
         <script src="../building.js"></script>
         <script src="/admin/admin.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
 
         <script>
             for (let l in building) {
@@ -146,16 +175,89 @@
 
             requireLogin();
 
+            let books = [];
+            let fuse = null;
+
+            async function loadBooks() {
+                const res = await fetch("/api/listbooks");
+                books = await res.json();
+
+                fuse = new Fuse(books, {
+                    keys: ["title", "author", "libraryId"],
+                    //ignoreLocation: true,
+                });
+            }
+
+            function renderResults(results) {
+                const container = document.getElementById("results");
+                container.innerHTML = "";
+
+                for (const book of results) {
+                    const div = document.createElement("div");
+                    div.className = "book";
+
+                    div.innerHTML = `
+                <h3>${book.title}</h3>
+                <p>${book.author}</p>
+                <p>#${book.libraryId}</p>
+            `;
+
+                    div.onclick = () => {
+                        editBook(book);
+                    };
+
+                    container.appendChild(div);
+                }
+            }
+
+            function search(query) {
+                if (!fuse || !query) {
+                    renderResults(books.slice(0, 50)); // fallback
+                    return;
+                }
+
+                const results = fuse
+                    .search(query)
+                    .slice(0, 50)
+                    .map((r) => r.item);
+
+                renderResults(results);
+            }
+
+            document.getElementById("query").addEventListener("input", (e) => {
+                search(e.target.value);
+            });
+
+            loadBooks().then(() => {
+                search(""); // show initial results
+            });
+
+            function editBook(book) {
+                window.editingBook = book;
+                //hide search and show edit+map
+                document.getElementById("search_panel").style.display = "none";
+                document.getElementById("edit_panel").style.display = "block";
+                document.getElementById("map").style.display = "block";
+
+                //set values
+                document.getElementById("libraryId").value = book.libraryId;
+                document.getElementById("title").value = book.title;
+                document.getElementById("author").value = book.author;
+                document.getElementById("level").value = book.level;
+                document.getElementById("shelfX").value = book.shelfX;
+                document.getElementById("shelfY").value = book.shelfY;
+            }
+
             document
                 .getElementById("create")
                 .addEventListener("click", async () => {
-                    const confirmed = confirm("Vols afegir aquest llibre?");
+                    const confirmed = confirm("Vols guardar aquests canvis?");
 
                     if (!confirmed) {
                         return;
                     }
 
-                    const response = await fetch("/api/books", {
+                    const response = await fetch("/api/editbooks", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -181,6 +283,8 @@
                             shelfY: Number(
                                 document.getElementById("shelfY").value,
                             ),
+
+                            internalId: window.editingBook.id,
                         }),
                     });
 
@@ -192,7 +296,7 @@
                         return;
                     }
 
-                    alert("Llibre afegit!");
+                    alert("Canvis guardats!");
                     window.location.reload();
                 });
         </script>
