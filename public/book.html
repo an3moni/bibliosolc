@@ -52,7 +52,6 @@
 
         <script src="building.js"></script>
         <script>
-            loadBuilding();
             function getBookId() {
                 const params = new URLSearchParams(window.location.search);
                 return params.get("id");
@@ -88,8 +87,9 @@
                 document.getElementById("shelfY").textContent = book.shelfY;
                 document.title = book.title + " - BiblioSolc";
             }
-
-            loadBook();
+            loadBuilding().then((b) => {
+                loadBook();
+            });
         </script>
     </body>
 </html>
