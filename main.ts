@@ -20,6 +20,11 @@ interface Book {
   shelfY: number;
 }
 
+interface Level {
+  n: number;
+  name: string;
+}
+
 const app = new Application();
 const router = new Router();
 
@@ -37,6 +42,18 @@ router.get("/api/listbooks", async (ctx) => {
   }
 
   ctx.response.body = books;
+});
+
+router.get("/api/building", async (ctx) => {
+  const levels = [];
+
+  for await (const entry of kv.list<Level>({
+    prefix: ["levels"],
+  })) {
+    levels.push(entry.value);
+  }
+
+  ctx.response.body = levels;
 });
 
 router.get("/api/hello", (ctx) => {
@@ -60,6 +77,39 @@ router.post("/login", async (ctx) => {
 
   ctx.response.body = {
     success: true,
+  };
+});
+
+router.post("/api/setlevel", async (ctx) => {
+  const body = await ctx.request.body.json();
+  const { name, number, password } = body;
+
+  if (!password || !name || number === undefined) {
+    ctx.response.status = 400;
+    ctx.response.body = {
+      error: "Missing required fields",
+    };
+    return;
+  }
+
+  if (!(await authenticate(password))) {
+    ctx.response.status = 401;
+    ctx.response.body = {
+      error: "Authentication failed",
+    };
+    return;
+  }
+
+  const level: Level = {
+    n: number,
+    name,
+  };
+
+  await kv.set(["levels", number], level);
+
+  ctx.response.body = {
+    success: true,
+    number,
   };
 });
 
@@ -152,7 +202,7 @@ router.post("/api/editbooks", async (ctx) => {
   }
 
   const book = {
-    internalId,
+    id: internalId,
     libraryId,
     title,
     author,

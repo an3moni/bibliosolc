@@ -135,14 +135,16 @@
         <script src="/admin/admin.js"></script>
 
         <script>
-            for (let l in building) {
-                document.getElementById("level").innerHTML +=
-                    "<option value='" +
-                    l +
-                    "'>" +
-                    building[l].name +
-                    "</option>";
-            }
+            loadBuilding().then((b) => {
+                for (let l in building) {
+                    document.getElementById("level").innerHTML +=
+                        "<option value='" +
+                        l +
+                        "'>" +
+                        building[l].name +
+                        "</option>";
+                }
+            });
 
             requireLogin();
 

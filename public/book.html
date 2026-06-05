@@ -52,6 +52,7 @@
 
         <script src="building.js"></script>
         <script>
+            loadBuilding();
             function getBookId() {
                 const params = new URLSearchParams(window.location.search);
                 return params.get("id");

@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Afegir llibre - Biblioteques Escola Solc</title>
+    </head>
+    <body>
+        <div
+            style="
+                position: absolute;
+                left: 5px;
+                top: 5px;
+                text-decoration: none;
+            "
+        >
+            <a style="text-decoration: none; color: royalblue" href="/admin"
+                >← Tornar endarrere</a
+            >
+        </div>
+
+        <div id="panel">
+            <h1>Editar biblioteques</h1>
+            <hr />
+
+            <div id="inputs"></div>
+            <button id="create">Afegir biblioteca</button>
+        </div>
+
+        <style>
+            #panel {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                translate: -50% -50%;
+                padding: 2rem;
+                border: 1px solid lightgray;
+                border-radius: 0.2rem;
+                transition: border-color 0.2s;
+                width: 40%;
+            }
+
+            input {
+                all: unset;
+                border: 1px solid lightgray;
+                transition: border-color 0.2s;
+                border-radius: 0.2rem;
+                padding: 5px;
+                width: calc(100% - 1rem);
+            }
+
+            input:hover,
+            input:focus,
+            select:hover,
+            select:focus {
+                border-color: black;
+            }
+
+            #panel:hover,
+            #panel:has(*:hover) {
+                border-color: black;
+            }
+
+            button {
+                all: unset;
+                border: 1px solid lightgray;
+                border-radius: 0.2rem;
+                padding: 5px;
+                transition: border-color 0.2s;
+                cursor: pointer;
+                width: calc(100% - 1rem);
+                text-align: center;
+                box-shadow: 0 10px gray;
+            }
+
+            .lev > button {
+                width: unset;
+                box-shadow: 10px 0 gray;
+            }
+            .lev > button:hover {
+                box-shadow: 5px 0 gray;
+                translate: 5px 0px;
+            }
+            .lev > button:active {
+                box-shadow: 0 0 gray;
+                translate: 10px 0;
+            }
+
+            *:hover > button {
+                border-color: black;
+            }
+            button:hover {
+                box-shadow: 0 5px gray;
+                translate: 0px 5px;
+            }
+            button:active {
+                box-shadow: 0 0 gray;
+                translate: 0 10px;
+            }
+
+            #inputs {
+                display: flex;
+                flex-direction: column;
+            }
+            .lev {
+                display: flex;
+            }
+        </style>
+
+        <script src="../building.js"></script>
+        <script src="/admin/admin.js"></script>
+
+        <script>
+            requireLogin();
+            loadBuilding().then((b) => {
+                for (let l in building) {
+                    document.getElementById("inputs").innerHTML +=
+                        "<div class='lev'><input placeholder='El nom no pot estar en blanc' value='" +
+                        building[l].name +
+                        "'><button onclick='save(" +
+                        l +
+                        ")'>Guardar</button></div><br>";
+                }
+            });
+
+            document.getElementById("create").onclick = async function () {
+                document.getElementById("inputs").innerHTML +=
+                    "<div class='lev'><input placeholder='El nom no pot estar en blanc'><button onclick='save(" +
+                    Array.from(document.getElementsByTagName("input")).length +
+                    ")'>Guardar</button></div><br>";
+            };
+
+            async function save(n) {
+                const response = await fetch("/api/setlevel", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        password: getPassword(),
+
+                        name: document.getElementsByTagName("input")[n].value,
+
+                        number: n,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    alert(data.error ?? "Error");
+
+                    return;
+                }
+
+                alert("Canvi guardat!");
+                window.location.reload();
+            }
+        </script>
+    </body>
+</html>

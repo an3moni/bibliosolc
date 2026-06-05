@@ -129,7 +129,7 @@
         `;
 
                     div.onclick = () => {
-                        window.location.href = `/book.html?id=${book.id}`;
+                        window.location.href = `/book.html?id=${book.id || book.internalId}`;
                     };
 
                     container.appendChild(div);
