@@ -3,8 +3,9 @@ const kv = await Deno.openKv();
 import * as argon2 from "jsr:@felix/argon2";
 import Fuse from "npm:fuse.js";
 
-const ADMIN_PASSWORD_HASH =
-  "$argon2id$v=19$m=4096,t=3,p=1$v2GLiiGP8HYi4sfRpQgchXKH03EShg$tKXOeQTZAgEZHzTgL9AmKIlDNphlSrjZzvd8GHRDNFg";
+const HARDCODED_PASSWORD = "$argon2id$v=19$m=4096,t=3,p=1$v2GLiiGP8HYi4sfRpQgchXKH03EShg$tKXOeQTZAgEZHzTgL9AmKIlDNphlSrjZzvd8GHRDNFg";
+const entry = await kv.get<string>(["passwords", 0]);
+const ADMIN_PASSWORD_HASH = entry.value ?? HARDCODED_PASSWORD;
 
 async function authenticate(password: string): Promise<boolean> {
   return await argon2.verify(ADMIN_PASSWORD_HASH, password);
@@ -79,6 +80,33 @@ router.post("/login", async (ctx) => {
     success: true,
   };
 });
+
+router.post("/api/changepassword", async (ctx) => {
+  const body = await ctx.request.body.json();
+  const { newPassword, password } = body;
+
+  if (!password || !newPassword) {
+    ctx.response.status = 400;
+    ctx.response.body = {
+      error: "Missing required fields",
+    };
+    return;
+  }
+
+  if (!(await authenticate(password))) {
+    ctx.response.status = 401;
+    ctx.response.body = {
+      error: "Authentication failed",
+    };
+    return;
+  }
+
+  await kv.set(["passwords", 0], newPassword);
+
+  ctx.response.body = {
+    success: true,
+  };
+})
 
 router.post("/api/setlevel", async (ctx) => {
   const body = await ctx.request.body.json();
