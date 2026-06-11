@@ -3,11 +3,12 @@ const kv = await Deno.openKv();
 import * as argon2 from "jsr:@felix/argon2";
 import Fuse from "npm:fuse.js";
 
-const HARDCODED_PASSWORD = "$argon2id$v=19$m=4096,t=3,p=1$v2GLiiGP8HYi4sfRpQgchXKH03EShg$tKXOeQTZAgEZHzTgL9AmKIlDNphlSrjZzvd8GHRDNFg";
-const entry = await kv.get<string>(["passwords", 0]);
-const ADMIN_PASSWORD_HASH = entry.value ?? HARDCODED_PASSWORD;
+const HARDCODED_PASSWORD =
+  "$argon2id$v=19$m=4096,t=3,p=1$v2GLiiGP8HYi4sfRpQgchXKH03EShg$tKXOeQTZAgEZHzTgL9AmKIlDNphlSrjZzvd8GHRDNFg";
 
 async function authenticate(password: string): Promise<boolean> {
+  let entry = await kv.get<string>(["passwords", 0]);
+  let ADMIN_PASSWORD_HASH = entry.value ?? HARDCODED_PASSWORD;
   return await argon2.verify(ADMIN_PASSWORD_HASH, password);
 }
 
@@ -101,12 +102,12 @@ router.post("/api/changepassword", async (ctx) => {
     return;
   }
 
-  await kv.set(["passwords", 0], newPassword);
+  await kv.set(["passwords", 0], await argon2.hash(newPassword));
 
   ctx.response.body = {
     success: true,
   };
-})
+});
 
 router.post("/api/setlevel", async (ctx) => {
   const body = await ctx.request.body.json();

@@ -130,6 +130,12 @@
             };
 
             async function save(n) {
+                const confirmed = confirm("Vols guardar aquests canvis?");
+
+                if (!confirmed) {
+                    return;
+                }
+
                 const response = await fetch("/api/setlevel", {
                     method: "POST",
                     headers: {
